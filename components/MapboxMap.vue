@@ -1,11 +1,14 @@
 <template>
-  <div id="mapboxContainer"></div>
+  <div id="mapboxContainer" ref="mapDiv"></div>
 </template>
 <script setup>
 import { ref, onMounted, reactive } from "vue";
 import mapboxgl from "mapbox-gl";
 
 const map = ref();
+const mapDiv = ref();
+
+const moving = ref(false);
 
 onMounted(() => {
   initMap();
@@ -23,7 +26,34 @@ const initMap = async () => {
   });
 };
 
+const initEvent = (viewer) => {
+  mapDiv.value.addEventListener("mouseenter", (event) => {
+    moving.value = true;
+  });
+  mapDiv.value.addEventListener("mouseleave", (event) => {
+    moving.value = false;
+  });
+  map.value.on("move", () => syncCesiumView(viewer));
+};
+
+const syncCesiumView = (viewer) => {
+  if (moving.value) {
+    //  update Cesium viewer's camera properties based on Mapbox map's view properties
+    const camera = viewer.camera;
+    const bounds = map.value.getBounds().toArray();
+    camera.flyTo({
+      destination: Cesium.Rectangle.fromDegrees(...bounds[0], ...bounds[1]),
+      orientation: {
+        heading: Cesium.Math.toRadians(map.value.getBearing()),
+        pitch: Cesium.Math.toRadians(map.value.getPitch() - 90),
+      },
+      duration: 0,
+    });
+  }
+};
+
 defineExpose({
   map,
+  initEvent,
 });
 </script>
