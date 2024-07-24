@@ -26,8 +26,14 @@ const getCurrentLocation = () => {
   }
 };
 
+const initSyncEvent = () => {
+  cesiumMap.value.initEvent(mapboxMap.value.map);
+  mapboxMap.value.initEvent(cesiumMap.value.viewer);
+};
+
 onMounted(() => {
   getCurrentLocation();
+  initSyncEvent();
 });
 </script>
 <style scoped>
