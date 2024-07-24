@@ -5,6 +5,9 @@ on:
   push:
     branches:
       - main
+env:
+  NUXT_CESIUM_TOKEN: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJhYjk0N2ExNC1hYjkzLTRkY2MtOWMwMy0yZTFlZWZhZWVlMDMiLCJpZCI6MjMwMzg2LCJpYXQiOjE3MjE3OTE1MTB9.5LZH69F7VJTsjPs_YnigDhvX9CeCJc1di7tvan4iAZA
+  NUXT_MAPBOX_TOKEN: pk.eyJ1Ijoic2FsaTgzMDEwMSIsImEiOiJjam83OGR0dmowdDYzM3dxcWRrZ3I1MnAwIn0.Xm83RoJvHihA7a-AD2z5TQ
 jobs:
   build:
     runs-on: ubuntu-latest
