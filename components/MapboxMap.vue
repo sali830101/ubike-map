@@ -4,8 +4,11 @@
 <script setup>
 import { ref, onMounted, reactive } from "vue";
 import mapboxgl from "mapbox-gl";
-import { getLiveUbikeData, getRoute } from "@/api";
-import * as turf from "@turf/turf";
+import { getLiveUbikeData } from "@/api";
+
+const props = defineProps({
+  addLocation: Function,
+});
 
 const map = ref();
 const mapDiv = ref();
@@ -54,17 +57,8 @@ const initEvent = (viewer) => {
       layers: ["ubike-stations"],
     });
     if (!features.length) {
-      if (markers.length === 2) {
-        markers.forEach((m) => m.remove());
-        markers.length = 0;
-      }
-      // Create a default Marker and add it to the map.
-      const marker = new mapboxgl.Marker({ color: markers.length ? "red" : "blue" }).setLngLat([event.lngLat.lng, event.lngLat.lat]).addTo(map.value);
-      markers.push(marker);
-      console.log(markers);
-      if (markers.length === 2) {
-        getUbikeRoute();
-      }
+      addMarker([event.lngLat.lng, event.lngLat.lat]);
+      props.addLocation([event.lngLat.lng, event.lngLat.lat], "mapbox");
 
       return;
     }
@@ -105,36 +99,23 @@ const openPopup = async (feature) => {
     .addTo(map.value);
 };
 
-const getUbikeRoute = async () => {
-  const startPoint = markers[0].getLngLat();
-  const endPoint = markers[1].getLngLat();
-  const coords = [[startPoint.lng, startPoint.lat]];
-  const features = map.value.querySourceFeatures("composite", { sourceLayer: "ubike_stations" });
-  // get nearest ubike station from start point
-  const nearestUbikeStart = turf.nearestPoint(turf.point([startPoint.lng, startPoint.lat]), {
-    type: "FeatureCollection",
-    features: features,
-  });
-  coords.push(nearestUbikeStart.geometry.coordinates);
-  // get nearest ubike station to destination
-  const nearestUbikeEnd = turf.nearestPoint(turf.point([endPoint.lng, endPoint.lat]), {
-    type: "FeatureCollection",
-    features: features,
-  });
-  coords.push(nearestUbikeEnd.geometry.coordinates);
-  coords.push([endPoint.lng, endPoint.lat]);
-  // walk to nearest ubike station
-  const route1 = await getRoute("mapbox/walking", [coords[0], coords[1]], mapboxgl.accessToken);
-  // ride ubike
-  const route2 = await getRoute("mapbox/cycling", [coords[1], coords[2]], mapboxgl.accessToken);
-  // walk from nearest ubike station to destination
-  const route3 = await getRoute("mapbox/walking", [coords[2], coords[3]], mapboxgl.accessToken);
+const addMarker = (coords) => {
+  if (markers.length === 2) {
+    markers.forEach((m) => m.remove());
+    markers.length = 0;
+  }
+  // Create a default Marker and add it to the map.
+  const marker = new mapboxgl.Marker({ color: markers.length ? "red" : "#0062ff" }).setLngLat(coords).addTo(map.value);
+  markers.push(marker);
+};
+
+const addRoute = (route) => {
   const geojson = {
     type: "Feature",
     properties: {},
     geometry: {
       type: "LineString",
-      coordinates: [...route1.geometry.coordinates, ...route2.geometry.coordinates, ...route3.geometry.coordinates],
+      coordinates: route,
     },
   };
   // if the route already exists on the map, we'll reset it using setData
@@ -166,6 +147,8 @@ const getUbikeRoute = async () => {
 defineExpose({
   map,
   initEvent,
+  addMarker,
+  addRoute,
 });
 </script>
 <style>

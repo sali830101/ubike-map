@@ -4,10 +4,17 @@
 <script setup>
 import { ref, onMounted, reactive } from "vue";
 
+const props = defineProps({
+  addLocation: Function,
+});
+
 const viewer = ref();
 const viewerDiv = ref();
 
 const moving = ref(false);
+
+const markers = reactive([]);
+const polylineRoute = ref();
 
 onMounted(() => {
   initMap();
@@ -36,6 +43,8 @@ const initMap = async () => {
   // Add Cesium OSM Buildings, a global 3D buildings layer.
   const buildingTileset = await Cesium.createOsmBuildingsAsync();
   viewer.value.scene.primitives.add(buildingTileset);
+
+  viewer.value.scene.globe.depthTestAgainstTerrain = false;
 };
 
 const initEvent = (map) => {
@@ -51,6 +60,22 @@ const initEvent = (map) => {
   // By default, the `camera.changed` event will trigger when the camera has changed by 50%
   // To make it more sensitive, we can bring down this sensitivity
   viewer.value.camera.percentageChanged = 0.0001;
+
+  // click event
+  viewer.value.screenSpaceEventHandler.setInputAction(function (event) {
+    let scene = viewer.value.scene;
+    if (scene.pickPositionSupported) {
+      let cartesian = scene.pickPosition(event.position);
+
+      if (Cesium.defined(cartesian)) {
+        let cartographic = Cesium.Cartographic.fromCartesian(cartesian);
+        let longitude = Cesium.Math.toDegrees(cartographic.longitude);
+        let latitude = Cesium.Math.toDegrees(cartographic.latitude);
+        addMarker([longitude, latitude]);
+        props.addLocation([longitude, latitude], "cesium");
+      }
+    }
+  }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 };
 
 const syncToMapboxMap = (map) => {
@@ -73,8 +98,43 @@ const syncToMapboxMap = (map) => {
   }
 };
 
+const addMarker = (coords) => {
+  viewer.value.entities.remove(polylineRoute.value);
+  if (markers.length === 2) {
+    markers.forEach((m) => viewer.value.entities.remove(m));
+    markers.length = 0;
+  }
+  const entity = viewer.value.entities.add({
+    position: Cesium.Cartesian3.fromDegrees(coords[0], coords[1]),
+    billboard: {
+      image: markers.length ? "/marker-red.png" : "/marker-blue.png",
+      scale: 2,
+    },
+  });
+  markers.push(entity);
+};
+
+const addRoute = (route) => {
+  const cornflowerBlue = Cesium.Color.CORNFLOWERBLUE.withAlpha(0.7);
+  const polyline = viewer.value.entities.add({
+    polyline: {
+      positions: Cesium.Cartesian3.fromDegreesArray(route.flat()),
+      width: 5,
+      material: new Cesium.PolylineOutlineMaterialProperty({
+        color: cornflowerBlue,
+      }),
+      depthFailMaterial: new Cesium.PolylineOutlineMaterialProperty({
+        color: cornflowerBlue,
+      }),
+    },
+  });
+  polylineRoute.value = polyline;
+};
+
 defineExpose({
   viewer,
   initEvent,
+  addMarker,
+  addRoute,
 });
 </script>
