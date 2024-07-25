@@ -6,6 +6,7 @@
 </template>
 <script setup>
 import { ref, onMounted, reactive } from "vue";
+import { getLiveUbikeData } from "@/api";
 
 const cesiumMap = ref(null);
 const mapboxMap = ref(null);
@@ -31,9 +32,29 @@ const initSyncEvent = () => {
   mapboxMap.value.initEvent(cesiumMap.value.viewer);
 };
 
+const initUbike = async () => {
+  const data = await getLiveUbikeData();
+  data.forEach((d) => {
+    const cesiumPoint = {
+      name: d.sna,
+      position: Cesium.Cartesian3.fromDegrees(d.longitude, d.latitude),
+      point: {
+        pixelSize: 10,
+        color: Cesium.Color.RED,
+        outlineColor: Cesium.Color.WHITE,
+        outlineWidth: 2,
+        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      },
+    };
+    // cesiumMap.value.viewer.entities.add(cesiumPoint);
+  });
+};
+
 onMounted(() => {
   getCurrentLocation();
   initSyncEvent();
+  // initUbike();
 });
 </script>
 <style scoped>
