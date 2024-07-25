@@ -3,3 +3,11 @@ export const getLiveUbikeData = async () => {
     .then((response) => response.json())
     .then((data) => data);
 };
+
+export const getRoute = async (profile, coords, token) => {
+  return await fetch(
+    `https://api.mapbox.com/directions/v5/${profile}/${coords.map((c) => c.join(",")).join(";")}?geometries=geojson&access_token=${token}`
+  )
+    .then((response) => response.json())
+    .then((data) => data.routes[0]);
+};
