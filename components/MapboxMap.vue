@@ -21,8 +21,8 @@ const initMap = async () => {
 
   map.value = new mapboxgl.Map({
     container: "mapboxContainer", // container ID
-    center: [121.564558, 25.03746], // starting position [lng, lat]. Note that lat must be set between -90 and 90
-    zoom: 10, // starting zoom
+    center: [121.5219484, 25.0459674, 550], // starting position [lng, lat]. Note that lat must be set between -90 and 90
+    zoom: 16, // starting zoom
   });
 };
 

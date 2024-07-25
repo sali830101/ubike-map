@@ -30,12 +30,14 @@ const initMap = async () => {
   });
 
   viewer.value.camera.flyTo({
-    destination: Cesium.Cartesian3.fromDegrees(121.564558, 25.03746, 10000), //taipei coords
+    destination: Cesium.Cartesian3.fromDegrees(121.5219484, 25.0459674, 550), //oneworks coords
   });
 
   // Add Cesium OSM Buildings, a global 3D buildings layer.
-  const buildingTileset = await Cesium.createOsmBuildingsAsync();
-  viewer.value.scene.primitives.add(buildingTileset);
+  // const buildingTileset = await Cesium.createOsmBuildingsAsync();
+  // viewer.value.scene.primitives.add(buildingTileset);
+
+  addOSMBuildings();
 };
 
 const initEvent = (map) => {
@@ -51,6 +53,9 @@ const initEvent = (map) => {
   // By default, the `camera.changed` event will trigger when the camera has changed by 50%
   // To make it more sensitive, we can bring down this sensitivity
   viewer.value.camera.percentageChanged = 0.0001;
+
+  // Set the cull function for the viewer
+  viewer.value.cull = cull;
 };
 
 const syncToMapboxMap = (map) => {
@@ -72,6 +77,58 @@ const syncToMapboxMap = (map) => {
     map.setPitch(Cesium.Math.toDegrees(camera.pitch) + 90);
   }
 };
+
+const addOSMBuildings = () => {
+  const promise = Cesium.GeoJsonDataSource.load("/geojson/osm_buildings.geojson", {
+    clampToGround: true, //The position is clamped to the terrain.
+  });
+  const promiseKML = Cesium.KmlDataSource.load("/kml/osm_buildings.kml", {
+    clampToGround: true, //The position is clamped to the terrain.
+  });
+  promiseKML
+    .then(function (dataSource) {
+      //Get the array of entities
+      const entities = dataSource.entities.values;
+
+      for (let i = 0; i < entities.length; i++) {
+        //For each entity, create a random color based on the state name.
+        //Some states have multiple entities, so we store the color in a
+        //hash so that we use the same color for the entire state.
+        const entity = entities[i];
+
+        if (entity.polygon) {
+          //Set the polygon material to our random color.
+          entity.polygon.material = Cesium.Color.LIGHTGREY.withAlpha(0.5);
+          //Remove the outlines.
+          entity.polygon.outline = false;
+
+          entity.polygon.clampToGround = true;
+
+          entity.polygon.extrudedHeight = 50;
+
+          viewer.value.entities.add(entity);
+        }
+      }
+    })
+    .catch(function (error) {
+      //Display any errrors encountered while loading.
+      window.alert(error);
+    });
+};
+
+// Define a custom cull function
+function cull(entity) {
+  console.log("cull");
+  // Get the camera object
+  var camera = viewer.value.camera;
+
+  // Check if the entity is in the view frustum
+  if (camera.isInFrustum(entity.position)) {
+    return true; // Entity is in view, render it
+  } else {
+    return false; // Entity is not in view, hide it
+  }
+}
 
 defineExpose({
   viewer,
