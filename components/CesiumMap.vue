@@ -78,14 +78,17 @@ const syncToMapboxMap = (map) => {
   }
 };
 
-const addOSMBuildings = () => {
-  const promise = Cesium.GeoJsonDataSource.load("/geojson/osm_buildings.geojson", {
+const addOSMBuildings = async () => {
+  // const tileset = await Cesium.Cesium3DTileset.fromUrl("/3d tiles/osm_buildings/tileset.json");
+  // viewer.value.scene.primitives.add(tileset);
+  // const tileset = viewer.value.scene.primitives.add(await Cesium.Cesium3DTileset.fromIonAssetId(2681531));
+  const promise = Cesium.GeoJsonDataSource.load("/geojson/osm_buildings_clean.geojson", {
     clampToGround: true, //The position is clamped to the terrain.
   });
-  const promiseKML = Cesium.KmlDataSource.load("/kml/osm_buildings.kml", {
-    clampToGround: true, //The position is clamped to the terrain.
-  });
-  promiseKML
+  // const promiseKML = Cesium.KmlDataSource.load("/kml/osm_buildings.kml", {
+  //   clampToGround: true, //The position is clamped to the terrain.
+  // });
+  promise
     .then(function (dataSource) {
       //Get the array of entities
       const entities = dataSource.entities.values;
