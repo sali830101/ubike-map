@@ -33,36 +33,39 @@ const initMap = async () => {
     style: "mapbox://styles/sali830101/clz0xuu1l00h701rib99z3s5s", // custom style with ubike
   });
 
-  map.value.on("load", () => {
-    map.value.addSource("ubike", {
-      type: "geojson",
-      data: "/geojson/ubike.geojson",
-    });
-    console.log(map.value);
-  });
+  // map.value.on("load", () => {
+  //   map.value.addSource("ubike", {
+  //     type: "geojson",
+  //     data: "/geojson/ubike.geojson",
+  //   });
+  //   console.log(map.value);
+  // });
 };
 
 const initEvent = (viewer) => {
-  mapDiv.value.addEventListener("mouseenter", (event) => {
-    moving.value = true;
-  });
-  mapDiv.value.addEventListener("mouseleave", (event) => {
-    moving.value = false;
-  });
-  map.value.on("move", () => syncCesiumView(viewer));
-
-  // add popup event
-  map.value.on("click", (event) => {
-    const features = map.value.queryRenderedFeatures(event.point, {
-      layers: ["ubike-stations"],
+  map.value.on("load", () => {
+    addOSMBuildings();
+    mapDiv.value.addEventListener("mouseenter", (event) => {
+      moving.value = true;
     });
-    if (!features.length) {
-      addMarker([event.lngLat.lng, event.lngLat.lat]);
-      props.addLocation([event.lngLat.lng, event.lngLat.lat], "mapbox");
+    mapDiv.value.addEventListener("mouseleave", (event) => {
+      moving.value = false;
+    });
+    map.value.on("move", () => syncCesiumView(viewer));
 
-      return;
-    }
-    openPopup(features[0]);
+    // add popup event
+    map.value.on("click", (event) => {
+      const features = map.value.queryRenderedFeatures(event.point, {
+        layers: ["ubike-stations"],
+      });
+      if (!features.length) {
+        addMarker([event.lngLat.lng, event.lngLat.lat]);
+        props.addLocation([event.lngLat.lng, event.lngLat.lat], "mapbox");
+
+        return;
+      }
+      openPopup(features[0]);
+    });
   });
 };
 
@@ -80,6 +83,38 @@ const syncCesiumView = (viewer) => {
       duration: 0,
     });
   }
+};
+
+const addOSMBuildings = async () => {
+  map.value.addSource("osm-buildings", {
+    type: "geojson",
+    // Use a URL for the value for the `data` property.
+    data: "/geojson/osm_buildings_clean.geojson",
+    // Size of the tile buffer on each side. A value of 0 produces no buffer.
+    buffer: 0,
+    minzoom: 15,
+    // implements the Douglas–Peucker algorithm and can be used to improve performance
+    tolerance: 1,
+  });
+
+  map.value.addLayer({
+    id: "osm-buildings",
+    type: "fill-extrusion",
+    source: "osm-buildings",
+    paint: {
+      // Get the `fill-extrusion-color` from the source `color` property.
+      "fill-extrusion-color": "#D3D3D3",
+
+      // Get `fill-extrusion-height` from the source `height` property.
+      "fill-extrusion-height": 50,
+
+      // Get `fill-extrusion-base` from the source `base_height` property.
+      "fill-extrusion-base": 0,
+
+      // Make extrusions slightly opaque to see through indoor walls.
+      "fill-extrusion-opacity": 0.5,
+    },
+  });
 };
 
 const openPopup = async (feature) => {

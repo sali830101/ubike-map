@@ -37,14 +37,16 @@ const initMap = async () => {
   });
 
   viewer.value.camera.flyTo({
-    destination: Cesium.Cartesian3.fromDegrees(121.564558, 25.03746, 10000), //taipei coords
+    destination: Cesium.Cartesian3.fromDegrees(121.5219484, 25.0459674, 550), //oneworks coords
   });
 
-  // Add Cesium OSM Buildings, a global 3D buildings layer.
-  const buildingTileset = await Cesium.createOsmBuildingsAsync();
-  viewer.value.scene.primitives.add(buildingTileset);
-
   viewer.value.scene.globe.depthTestAgainstTerrain = false;
+
+  // Add Cesium OSM Buildings, a global 3D buildings layer.
+  // const buildingTileset = await Cesium.createOsmBuildingsAsync();
+  // viewer.value.scene.primitives.add(buildingTileset);
+
+  addOSMBuildings();
 };
 
 const initEvent = (map) => {
@@ -96,6 +98,47 @@ const syncToMapboxMap = (map) => {
     map.setBearing(Cesium.Math.toDegrees(camera.heading));
     map.setPitch(Cesium.Math.toDegrees(camera.pitch) + 90);
   }
+};
+
+const addOSMBuildings = async () => {
+  // const tileset = await Cesium.Cesium3DTileset.fromUrl("/3d tiles/osm_buildings/tileset.json");
+  // viewer.value.scene.primitives.add(tileset);
+  // const tileset = viewer.value.scene.primitives.add(await Cesium.Cesium3DTileset.fromIonAssetId(2681531));
+  const promise = Cesium.GeoJsonDataSource.load("/geojson/osm_buildings_clean.geojson", {
+    clampToGround: true, //The position is clamped to the terrain.
+  });
+  // const promiseKML = Cesium.KmlDataSource.load("/kml/osm_buildings.kml", {
+  //   clampToGround: true, //The position is clamped to the terrain.
+  // });
+  promise
+    .then(function (dataSource) {
+      //Get the array of entities
+      const entities = dataSource.entities.values;
+
+      for (let i = 0; i < entities.length; i++) {
+        //For each entity, create a random color based on the state name.
+        //Some states have multiple entities, so we store the color in a
+        //hash so that we use the same color for the entire state.
+        const entity = entities[i];
+
+        if (entity.polygon) {
+          //Set the polygon material to our random color.
+          entity.polygon.material = Cesium.Color.LIGHTGREY.withAlpha(0.5);
+          //Remove the outlines.
+          entity.polygon.outline = false;
+
+          entity.polygon.clampToGround = true;
+
+          entity.polygon.extrudedHeight = 50;
+
+          viewer.value.entities.add(entity);
+        }
+      }
+    })
+    .catch(function (error) {
+      //Display any errrors encountered while loading.
+      window.alert(error);
+    });
 };
 
 const addMarker = (coords) => {
