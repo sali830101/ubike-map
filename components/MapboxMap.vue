@@ -17,6 +17,8 @@ const moving = ref(false);
 
 const markers = reactive([]);
 
+const popup = ref();
+
 onMounted(() => {
   initMap();
 });
@@ -53,7 +55,6 @@ const initEvent = (viewer) => {
     });
     map.value.on("move", () => syncCesiumView(viewer));
 
-    // add popup event
     map.value.on("click", (event) => {
       const features = map.value.queryRenderedFeatures(event.point, {
         layers: ["ubike-stations"],
@@ -64,7 +65,18 @@ const initEvent = (viewer) => {
 
         return;
       }
-      openPopup(features[0]);
+    });
+
+    // add popup event on hover
+    map.value.on("mouseenter", "ubike-stations", (e) => {
+      // Change the cursor style as a UI indicator.
+      map.value.getCanvas().style.cursor = "pointer";
+
+      openPopup(e.features[0]);
+    });
+    map.value.on("mouseleave", "ubike-stations", () => {
+      map.value.getCanvas().style.cursor = "";
+      // popup.value.remove();
     });
   });
 };
@@ -125,12 +137,16 @@ const openPopup = async (feature) => {
   let availableBikes = "No Data";
 
   if (target.length) {
-    availableBikes = `${target[0].available_rent_bikes}/${target[0].total}`;
+    availableBikes = target[0].available_rent_bikes;
   }
 
-  const popup = new mapboxgl.Popup({ offset: [0, -15] })
+  popup.value = new mapboxgl.Popup({ offset: [0, -15], closeButton: false, closeOnClick: false })
     .setLngLat(feature.geometry.coordinates)
-    .setHTML(`<h3>${feature.properties.name.replaceAll("_", " ")}</h3><p>${feature.properties.location}</p><p>目前可借車輛數: ${availableBikes}</p>`)
+    .setHTML(
+      `<h3>${feature.properties.name.replaceAll("_", " ")}</h3><p>${feature.properties.location}</p><p>目前可借車輛數: <span class="${
+        availableBikes ? "available" : "unavailable"
+      }">${target[0].available_rent_bikes}</span>/${target[0].total}</p>`
+    )
     .addTo(map.value);
 };
 
@@ -189,11 +205,22 @@ defineExpose({
 <style>
 /* custom style for popup */
 .mapboxgl-popup-close-button {
-  display: none;
 }
 .mapboxgl-popup-content {
   padding: 15px;
+  border-radius: 15px;
+}
+.mapboxgl-popup-tip {
+  display: none;
 }
 .mapboxgl-popup-content-wrapper {
+}
+.available {
+  color: green;
+  font-weight: bold;
+}
+.unavailable {
+  color: red;
+  font-weight: bold;
 }
 </style>
