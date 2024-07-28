@@ -71,12 +71,16 @@ const initEvent = (viewer) => {
     map.value.on("mouseenter", "ubike-stations", (e) => {
       // Change the cursor style as a UI indicator.
       map.value.getCanvas().style.cursor = "pointer";
-
+      if (popup.value) {
+        popup.value.remove();
+      }
       openPopup(e.features[0]);
     });
     map.value.on("mouseleave", "ubike-stations", () => {
       map.value.getCanvas().style.cursor = "";
-      // popup.value.remove();
+      if (popup.value) {
+        popup.value.remove();
+      }
     });
   });
 };
