@@ -190,10 +190,63 @@ const addRoute = (route) => {
   polylineRoute.value = polyline;
 };
 
+const addAnimation = async (routes) => {
+  let totalDuration = 0;
+  const positions = [];
+  routes.forEach((route) => {
+    const segmentDuration = route.duration / route.geometry.coordinates.length;
+    route.geometry.coordinates.forEach((c, index) => {
+      positions.push(totalDuration + segmentDuration * index);
+      positions.push(c[0]);
+      positions.push(c[1]);
+      positions.push(20);
+    });
+    totalDuration += route.duration;
+  });
+  const startTime = new Date();
+  const endTime = new Date();
+  endTime.setSeconds(endTime.getSeconds() + totalDuration);
+  const czml = [
+    {
+      id: "document",
+      name: "CZML Model",
+      version: "1.0",
+      clock: {
+        interval: `${startTime.toISOString()}/${endTime.toISOString()}`,
+        currentTime: startTime.toISOString(),
+        multiplier: 10,
+      },
+    },
+    {
+      id: "pushpin",
+      name: "Pushpin",
+      availability: `${startTime.toISOString()}/${endTime.toISOString()}`,
+      position: {
+        epoch: startTime.toISOString(),
+        cartographicDegrees: positions,
+      },
+      model: {
+        gltf: "/glb/pushpin.glb",
+        scale: 0.1,
+        minimumPixelSize: 10,
+        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+      },
+    },
+  ];
+  const dataSource = await viewer.value.dataSources.add(Cesium.CzmlDataSource.load(czml));
+
+  viewer.value.trackedEntity = dataSource.entities.getById("pushpin");
+};
+
+const sum = (array) => {
+  return array.reduce((a, b) => a + b, 0);
+};
+
 defineExpose({
   viewer,
   initEvent,
   addMarker,
   addRoute,
+  addAnimation,
 });
 </script>

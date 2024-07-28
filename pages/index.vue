@@ -2,6 +2,13 @@
   <div class="container">
     <h1>Ubike Map</h1>
     <p>select start and end point on the map to get the route for riding Ubike</p>
+    <div>
+      <p>
+        Estimation: <span v-if="estimation.walk1">Walk {{ (estimation.walk1 / 60).toFixed(1) }} mins</span
+        ><span v-if="estimation.bicycle">-> Ubike {{ (estimation.bicycle / 60).toFixed(1) }} mins</span
+        ><span v-if="estimation.walk2">-> Walk {{ (estimation.walk2 / 60).toFixed(1) }} mins</span>
+      </p>
+    </div>
     <div class="map-container">
       <CesiumMap class="child-container" ref="cesiumMap" :addLocation="addLocation"></CesiumMap>
       <MapboxMap class="child-container" ref="mapboxMap" :addLocation="addLocation"></MapboxMap>
@@ -18,6 +25,12 @@ const runtimeConfig = useRuntimeConfig();
 const cesiumMap = ref(null);
 const mapboxMap = ref(null);
 const locations = reactive([]);
+
+const estimation = ref({
+  walk1: 0,
+  bicycle: 0,
+  walk2: 0,
+});
 
 const getCurrentLocation = () => {
   // when location is available
@@ -77,6 +90,8 @@ const getUbikeRoute = async () => {
 
     mapboxMap.value.addRoute([...route.geometry.coordinates]);
     cesiumMap.value.addRoute([...route.geometry.coordinates]);
+    cesiumMap.value.addAnimation([route]);
+    estimation.value.walk1 = route.duration;
   } else {
     // walk to nearest ubike station
     const route1 = await getRoute("mapbox/walking", [coords[0], coords[1]], runtimeConfig.public.mapboxToken);
@@ -87,6 +102,10 @@ const getUbikeRoute = async () => {
 
     mapboxMap.value.addRoute([...route1.geometry.coordinates, ...route2.geometry.coordinates, ...route3.geometry.coordinates]);
     cesiumMap.value.addRoute([...route1.geometry.coordinates, ...route2.geometry.coordinates, ...route3.geometry.coordinates]);
+    cesiumMap.value.addAnimation([route1, route2, route3]);
+    estimation.value.walk1 = route1.duration;
+    estimation.value.bicycle = route2.duration;
+    estimation.value.walk2 = route3.duration;
   }
 };
 
