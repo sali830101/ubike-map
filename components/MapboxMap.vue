@@ -4,11 +4,18 @@
 <script setup>
 import { ref, onMounted, reactive } from "vue";
 import mapboxgl from "mapbox-gl";
+import { getLiveUbikeData } from "@/api";
+
+const props = defineProps({
+  addLocation: Function,
+});
 
 const map = ref();
 const mapDiv = ref();
 
 const moving = ref(false);
+
+const markers = reactive([]);
 
 onMounted(() => {
   initMap();
@@ -21,9 +28,18 @@ const initMap = async () => {
 
   map.value = new mapboxgl.Map({
     container: "mapboxContainer", // container ID
-    center: [121.5219484, 25.0459674, 550], // starting position [lng, lat]. Note that lat must be set between -90 and 90
-    zoom: 16, // starting zoom
+    center: [121.564558, 25.03746], // starting position [lng, lat]. Note that lat must be set between -90 and 90
+    zoom: 10, // starting zoom
+    style: "mapbox://styles/sali830101/clz0xuu1l00h701rib99z3s5s", // custom style with ubike
   });
+
+  // map.value.on("load", () => {
+  //   map.value.addSource("ubike", {
+  //     type: "geojson",
+  //     data: "/geojson/ubike.geojson",
+  //   });
+  //   console.log(map.value);
+  // });
 };
 
 const initEvent = (viewer) => {
@@ -36,6 +52,20 @@ const initEvent = (viewer) => {
       moving.value = false;
     });
     map.value.on("move", () => syncCesiumView(viewer));
+
+    // add popup event
+    map.value.on("click", (event) => {
+      const features = map.value.queryRenderedFeatures(event.point, {
+        layers: ["ubike-stations"],
+      });
+      if (!features.length) {
+        addMarker([event.lngLat.lng, event.lngLat.lat]);
+        props.addLocation([event.lngLat.lng, event.lngLat.lat], "mapbox");
+
+        return;
+      }
+      openPopup(features[0]);
+    });
   });
 };
 
@@ -87,8 +117,83 @@ const addOSMBuildings = async () => {
   });
 };
 
+const openPopup = async (feature) => {
+  const data = await getLiveUbikeData();
+
+  const target = data.filter((d) => d.sno === feature.properties.id);
+
+  let availableBikes = "No Data";
+
+  if (target.length) {
+    availableBikes = `${target[0].available_rent_bikes}/${target[0].total}`;
+  }
+
+  const popup = new mapboxgl.Popup({ offset: [0, -15] })
+    .setLngLat(feature.geometry.coordinates)
+    .setHTML(`<h3>${feature.properties.name.replaceAll("_", " ")}</h3><p>${feature.properties.location}</p><p>目前可借車輛數: ${availableBikes}</p>`)
+    .addTo(map.value);
+};
+
+const addMarker = (coords) => {
+  if (markers.length === 2) {
+    markers.forEach((m) => m.remove());
+    markers.length = 0;
+  }
+  // Create a default Marker and add it to the map.
+  const marker = new mapboxgl.Marker({ color: markers.length ? "red" : "#0062ff" }).setLngLat(coords).addTo(map.value);
+  markers.push(marker);
+};
+
+const addRoute = (route) => {
+  const geojson = {
+    type: "Feature",
+    properties: {},
+    geometry: {
+      type: "LineString",
+      coordinates: route,
+    },
+  };
+  // if the route already exists on the map, we'll reset it using setData
+  if (map.value.getSource("route")) {
+    map.value.getSource("route").setData(geojson);
+  }
+  // otherwise, we'll make a new request
+  else {
+    map.value.addLayer({
+      id: "route",
+      type: "line",
+      source: {
+        type: "geojson",
+        data: geojson,
+      },
+      layout: {
+        "line-join": "round",
+        "line-cap": "round",
+      },
+      paint: {
+        "line-color": "#3887be",
+        "line-width": 5,
+        "line-opacity": 0.75,
+      },
+    });
+  }
+};
+
 defineExpose({
   map,
   initEvent,
+  addMarker,
+  addRoute,
 });
 </script>
+<style>
+/* custom style for popup */
+.mapboxgl-popup-close-button {
+  display: none;
+}
+.mapboxgl-popup-content {
+  padding: 15px;
+}
+.mapboxgl-popup-content-wrapper {
+}
+</style>
