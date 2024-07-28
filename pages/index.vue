@@ -1,7 +1,11 @@
 <template>
   <div class="container">
-    <CesiumMap class="child-container" ref="cesiumMap" :addLocation="addLocation"></CesiumMap>
-    <MapboxMap class="child-container" ref="mapboxMap" :addLocation="addLocation"></MapboxMap>
+    <h1>Ubike Map</h1>
+    <p>select start and end point on the map to get the route for riding Ubike</p>
+    <div class="map-container">
+      <CesiumMap class="child-container" ref="cesiumMap" :addLocation="addLocation"></CesiumMap>
+      <MapboxMap class="child-container" ref="mapboxMap" :addLocation="addLocation"></MapboxMap>
+    </div>
   </div>
 </template>
 <script setup>
@@ -34,25 +38,6 @@ const getCurrentLocation = () => {
 const initSyncEvent = () => {
   cesiumMap.value.initEvent(mapboxMap.value.map);
   mapboxMap.value.initEvent(cesiumMap.value.viewer);
-};
-
-const initUbike = async () => {
-  const data = await getLiveUbikeData();
-  data.forEach((d) => {
-    const cesiumPoint = {
-      name: d.sna,
-      position: Cesium.Cartesian3.fromDegrees(d.longitude, d.latitude),
-      point: {
-        pixelSize: 10,
-        color: Cesium.Color.RED,
-        outlineColor: Cesium.Color.WHITE,
-        outlineWidth: 2,
-        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-        disableDepthTestDistance: Number.POSITIVE_INFINITY,
-      },
-    };
-    // cesiumMap.value.viewer.entities.add(cesiumPoint);
-  });
 };
 
 const addLocation = (coords, source) => {
@@ -115,14 +100,17 @@ onMounted(() => {
 /* Mobile First means designing for mobile before designing for desktop or any other device (This will make the page display faster on smaller devices). */
 /* For mobile phones: */
 .container {
+  padding: 30px;
+  width: 100vw;
+  box-sizing: border-box;
+}
+.map-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 20px;
-  width: 100vw;
-  height: 100vh;
-  padding: 30px;
-  box-sizing: border-box;
+  width: 100%;
+  height: 80vh;
 }
 .child-container {
   flex: 1;
@@ -131,15 +119,13 @@ onMounted(() => {
 
 /* For desktop: */
 @media only screen and (min-width: 768px) {
-  .container {
+  .map-container {
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: 20px;
-    width: 100vw;
-    height: 100vh;
-    padding: 30px;
-    box-sizing: border-box;
+    width: 100%;
+    height: 80vh;
   }
   .child-container {
     flex: 1;
