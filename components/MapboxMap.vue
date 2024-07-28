@@ -21,19 +21,22 @@ const initMap = async () => {
 
   map.value = new mapboxgl.Map({
     container: "mapboxContainer", // container ID
-    center: [121.564558, 25.03746], // starting position [lng, lat]. Note that lat must be set between -90 and 90
-    zoom: 10, // starting zoom
+    center: [121.5219484, 25.0459674, 550], // starting position [lng, lat]. Note that lat must be set between -90 and 90
+    zoom: 16, // starting zoom
   });
 };
 
 const initEvent = (viewer) => {
-  mapDiv.value.addEventListener("mouseenter", (event) => {
-    moving.value = true;
+  map.value.on("load", () => {
+    addOSMBuildings();
+    mapDiv.value.addEventListener("mouseenter", (event) => {
+      moving.value = true;
+    });
+    mapDiv.value.addEventListener("mouseleave", (event) => {
+      moving.value = false;
+    });
+    map.value.on("move", () => syncCesiumView(viewer));
   });
-  mapDiv.value.addEventListener("mouseleave", (event) => {
-    moving.value = false;
-  });
-  map.value.on("move", () => syncCesiumView(viewer));
 };
 
 const syncCesiumView = (viewer) => {
@@ -50,6 +53,38 @@ const syncCesiumView = (viewer) => {
       duration: 0,
     });
   }
+};
+
+const addOSMBuildings = async () => {
+  map.value.addSource("osm-buildings", {
+    type: "geojson",
+    // Use a URL for the value for the `data` property.
+    data: "/geojson/osm_buildings_clean.geojson",
+    // Size of the tile buffer on each side. A value of 0 produces no buffer.
+    buffer: 0,
+    minzoom: 15,
+    // implements the Douglas–Peucker algorithm and can be used to improve performance
+    tolerance: 1,
+  });
+
+  map.value.addLayer({
+    id: "osm-buildings",
+    type: "fill-extrusion",
+    source: "osm-buildings",
+    paint: {
+      // Get the `fill-extrusion-color` from the source `color` property.
+      "fill-extrusion-color": "#D3D3D3",
+
+      // Get `fill-extrusion-height` from the source `height` property.
+      "fill-extrusion-height": 50,
+
+      // Get `fill-extrusion-base` from the source `base_height` property.
+      "fill-extrusion-base": 0,
+
+      // Make extrusions slightly opaque to see through indoor walls.
+      "fill-extrusion-opacity": 0.5,
+    },
+  });
 };
 
 defineExpose({
