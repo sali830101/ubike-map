@@ -47,6 +47,7 @@ const initMap = async () => {
   // viewer.value.scene.primitives.add(buildingTileset);
 
   addOSMBuildings();
+  addUbike();
 };
 
 const initEvent = (map) => {
@@ -134,6 +135,21 @@ const addOSMBuildings = async () => {
           viewer.value.entities.add(entity);
         }
       }
+    })
+    .catch(function (error) {
+      //Display any errrors encountered while loading.
+      window.alert(error);
+    });
+};
+
+const addUbike = () => {
+  const promise = Cesium.GeoJsonDataSource.load("/geojson/ubike.geojson", {
+    clampToGround: true, //The position is clamped to the terrain.
+    markerSymbol: "bicycle",
+  });
+  promise
+    .then(function (dataSource) {
+      viewer.value.dataSources.add(dataSource);
     })
     .catch(function (error) {
       //Display any errrors encountered while loading.
