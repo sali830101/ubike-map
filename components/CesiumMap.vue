@@ -40,6 +40,8 @@ const initMap = async () => {
     destination: Cesium.Cartesian3.fromDegrees(121.5219484, 25.0459674, 550), //oneworks coords
   });
 
+  viewer.value.scene.globe.depthTestAgainstTerrain = false;
+
   // Add Cesium OSM Buildings, a global 3D buildings layer.
   // const buildingTileset = await Cesium.createOsmBuildingsAsync();
   // viewer.value.scene.primitives.add(buildingTileset);
