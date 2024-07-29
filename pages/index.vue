@@ -1,10 +1,11 @@
 <template>
   <div class="container">
     <h1>Ubike Map</h1>
-    <p>select start and end point on the map to get the route for riding Ubike</p>
     <div>
       <p>
-        Estimation: <span v-if="estimation.walk1">Walk {{ (estimation.walk1 / 60).toFixed(1) }} mins</span
+        <span v-if="!estimation.walk1 && !estimation.loading">Select start and end point on the map to get the route for riding Ubike</span>
+        <span v-if="estimation.loading">Loading route...</span>
+        <span v-if="estimation.walk1">Walk {{ (estimation.walk1 / 60).toFixed(1) }} mins</span
         ><span v-if="estimation.bicycle">-> Ubike {{ (estimation.bicycle / 60).toFixed(1) }} mins</span
         ><span v-if="estimation.walk2">-> Walk {{ (estimation.walk2 / 60).toFixed(1) }} mins</span>
       </p>
@@ -30,6 +31,7 @@ const estimation = ref({
   walk1: 0,
   bicycle: 0,
   walk2: 0,
+  loading: false,
 });
 
 const getCurrentLocation = () => {
@@ -67,6 +69,7 @@ const addLocation = (coords, source) => {
 };
 
 const getUbikeRoute = async () => {
+  estimation.value.loading = true;
   const coords = [locations[0]];
   const features = mapboxMap.value.map.querySourceFeatures("composite", { sourceLayer: "ubike_stations" });
   // get nearest ubike station from start point
@@ -107,6 +110,7 @@ const getUbikeRoute = async () => {
     estimation.value.bicycle = route2.duration;
     estimation.value.walk2 = route3.duration;
   }
+  estimation.value.loading = false;
 };
 
 onMounted(() => {
@@ -129,7 +133,7 @@ onMounted(() => {
   align-items: center;
   gap: 20px;
   width: 100%;
-  height: 80vh;
+  height: 60vh;
 }
 .child-container {
   flex: 1;
@@ -144,11 +148,11 @@ onMounted(() => {
     align-items: center;
     gap: 20px;
     width: 100%;
-    height: 80vh;
+    height: 60vh;
   }
   .child-container {
     flex: 1;
-    height: 60%;
+    height: 100%;
   }
 }
 </style>

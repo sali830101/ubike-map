@@ -199,7 +199,7 @@ const addAnimation = async (routes) => {
       positions.push(totalDuration + segmentDuration * index);
       positions.push(c[0]);
       positions.push(c[1]);
-      positions.push(20);
+      positions.push(0);
     });
     totalDuration += route.duration;
   });
@@ -215,6 +215,7 @@ const addAnimation = async (routes) => {
         interval: `${startTime.toISOString()}/${endTime.toISOString()}`,
         currentTime: startTime.toISOString(),
         multiplier: 10,
+        range: "LOOP_STOP",
       },
     },
     {
@@ -227,8 +228,8 @@ const addAnimation = async (routes) => {
       },
       model: {
         gltf: "/glb/pushpin.glb",
-        scale: 0.1,
-        minimumPixelSize: 10,
+        scale: 1,
+        minimumPixelSize: 30,
         heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
       },
     },
@@ -236,6 +237,8 @@ const addAnimation = async (routes) => {
   const dataSource = await viewer.value.dataSources.add(Cesium.CzmlDataSource.load(czml));
 
   viewer.value.trackedEntity = dataSource.entities.getById("pushpin");
+  viewer.value.clock.shouldAnimate = true;
+  moving.value = true;
 };
 
 const sum = (array) => {
